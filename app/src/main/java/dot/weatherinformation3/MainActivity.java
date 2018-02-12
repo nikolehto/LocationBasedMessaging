@@ -1,11 +1,18 @@
 package dot.weatherinformation3;
 
+import android.annotation.TargetApi;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -32,6 +39,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     String url;
 
     TemperatureResultReceiver mReceiver;
+    NotificationChannel mChannel;
 
     NotificationManager notificationManager;
     Intent intent;
