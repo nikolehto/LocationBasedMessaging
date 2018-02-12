@@ -2,12 +2,10 @@ package dot.weatherinformation3;
 
 import android.app.NotificationManager;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.content.res.XmlResourceParser;
+
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -21,10 +19,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
+
 import java.net.URL;
 
 public class MainActivity extends AppCompatActivity implements TemperatureResultReceiver.Receiver {
+
+    //FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getContext());
     final String APIkey = "077dcca6103cc9b1548abcee08a850a7";
     final String APIURL = "http://api.openweathermap.org/data/2.5/weather?"; //weather?lat=35&lon=139
     String location = "Oulu,FI";
@@ -44,21 +44,11 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        buildURI();
-
-        mReceiver = new TemperatureResultReceiver(new Handler());
-        mReceiver.setReceiver(this);
-        Intent intent = new Intent(Intent.ACTION_SYNC, null, this, TemperatureService.class);
-        intent.putExtra("url", url);
-        intent.putExtra("receiver", mReceiver);
-
-        startService(intent);
-
-        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        //notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         temp_text =(TextView) findViewById(R.id.temperature);
 
-        //startUpdateTEMP();
+        startUpdateTEMP();
         //startUpdateTEMP();
     }
 
@@ -78,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
             case TemperatureService.STATUS_RUNNING:
+                temp_text.setText("updating"); // TODO remove
                 //setProgressBarIndeterminateVisibility(true);
                 break;
             case TemperatureService.STATUS_FINISHED:
@@ -85,21 +76,46 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 //setProgressBarIndeterminateVisibility(false);
                 String result = resultData.getString("result");
                 temp_text.setText(result);
-                /* Update ListView with result */
-                // arrayAdapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_2, results);
-                // listView.setAdapter(arrayAdapter);
+
+                // Last service was success, start new service
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startUpdateTEMP();
+                    }
+                }, 10000);
+
                 break;
             case TemperatureService.STATUS_ERROR:
                 /* Handle the error */
+                temp_text.setText("ERROR");
                 String error = resultData.getString(Intent.EXTRA_TEXT);
                 Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+                final Handler handler2;
+                handler2 = new Handler();
+                handler2.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startUpdateTEMP();
+                    }
+                }, 10000);
                 break;
         }
     }
 
     void startUpdateTEMP() {
         buildURI();
-        new UpdateTemperatureAsyncTask().execute(url);
+
+        mReceiver = new TemperatureResultReceiver(new Handler());
+        mReceiver.setReceiver(this);
+        Intent intent = new Intent(Intent.ACTION_SYNC, null, this, TemperatureService.class);
+        intent.putExtra("url", url);
+        intent.putExtra("receiver", mReceiver);
+
+        startService(intent);
+
+        //new UpdateTemperatureAsyncTask().execute(url);
     }
 
     private class UpdateTemperatureAsyncTask extends AsyncTask<String, Void, String> {
