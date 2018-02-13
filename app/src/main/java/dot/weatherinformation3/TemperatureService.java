@@ -1,29 +1,19 @@
 package dot.weatherinformation3;
 
 import android.app.IntentService;
-import android.app.NotificationManager;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
-
-
-import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
-import android.util.Log;
-import android.view.View;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -38,19 +28,14 @@ public class TemperatureService extends IntentService {
     public static final int STATUS_FROM_DB = 1;
     public static final int STATUS_FINISHED = 2;
     public static final int STATUS_ERROR = 3;
-
-    private TemperatureDatabaseAdapter temperatureDatabaseAdapter;
+    private static final String TAG = "TemperatureService";
 
     private final String APIURL = "http://api.openweathermap.org/data/2.5/weather?";
     private String city = "";
     private String APIkey = "";
+    private int DEBUGdelay = 1800; // TODO remove delay
 
-
-
-    private int DEBUGdelay = 1800; // TODO remove debug delay
-
-    private static final String TAG = "TemperatureService";
-
+    private TemperatureDatabaseAdapter temperatureDatabaseAdapter;
 
     public TemperatureService() {
         super(TemperatureService.class.getName());
@@ -71,7 +56,7 @@ public class TemperatureService extends IntentService {
         if (!TextUtils.isEmpty(url)) {
             String latestTemp = temperatureDatabaseAdapter.getLatestTemperatureByCity(city);
             if(latestTemp != "<NO RECORD>") {
-                bundle.putString("DB_result", latestTemp); // TODO remove latestTemp
+                bundle.putString("DB_result", latestTemp);
                 receiver.send(STATUS_FROM_DB, bundle);
             }
             else {
@@ -171,5 +156,4 @@ public class TemperatureService extends IntentService {
 
         return builder.toString();
     }
-
 }

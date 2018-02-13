@@ -1,65 +1,47 @@
 package dot.weatherinformation3;
 
-import android.annotation.TargetApi;
+
+/*********************************
+  *      DEBUG version          *
+   *  - Sleep on http request  *
+    * - Very fast update-rate *
+     *************************
+ **/
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-
-import android.graphics.Color;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Handler;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-
-import java.net.URL;
-
 public class MainActivity extends AppCompatActivity implements TemperatureResultReceiver.Receiver {
 
     //FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getContext());
-    final String APIkey = "077dcca6103cc9b1548abcee08a850a7";
-    String city = "Oulu,FI";
-    String units = "metric";
-    //String url;
-
     public static final int FROM_DB = 1;
     public static final int FROM_INTERNET = 2;
 
+    private final String APIkey = "077dcca6103cc9b1548abcee08a850a7";
     private String notification_channel = "just a random id";
+    private String city = "Oulu,FI";
 
-    final int updateRate = 600; // 6sek 10min + request time
-    final int errorUpdateRate = 1200; // 12sek 20min + request time
+    final int updateRate = 600; // 6sec + request time
+    final int errorUpdateRate = 1200; // 12sec + request time
 
     boolean errorFlag = false;
     boolean userRefresh = false;
     boolean isRecent = false;
     boolean isSet = false;
+    String latestTemp = "";
+
     final Handler delayHandler = new Handler();
 
-    private String latestTemp = "";
-
     TemperatureResultReceiver mReceiver;
-    NotificationChannel mChannel;
-
-    NotificationManager notificationManager;
     Intent intent;
-
-    //MyObserver myObserver = new MyObserver(new Handler());
 
     TextView temp_text;
     TextView city_text;
@@ -94,13 +76,13 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
             case TemperatureService.STATUS_RUNNING:
-                // temp_text.setText("updating"); // TODO remove
-                //setProgressBarIndeterminateVisibility(true);
                 break;
             case TemperatureService.STATUS_FROM_DB:
                 if(!isRecent && !isSet) { // update only when
                     String DB_result = resultData.getString("DB_result");
-                    updateText(DB_result, FROM_DB);
+                    if(DB_result != null) {
+                        updateText(DB_result, FROM_DB);
+                    }
                     //temp_text.setText(DB_result);
                 }
                 break;
@@ -198,8 +180,6 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     }
 
     void sendNotification(String temperature, String source) {
-        //Get an instance of NotificationManager//
-
         String message = "City: " + city + "\nTemperature: " + temperature + "\nFROM: " + source;
 
         NotificationCompat.Builder mBuilder =
@@ -209,23 +189,15 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                         .setContentText(message);
 
-        // Gets an instance of the NotificationManager service//
 
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-
-        // When you issue multiple notifications about the same type of event,
-        // it’s best practice for your app to try to update an existing notification
-        // with this new information, rather than immediately creating a new notification.
-        // If you want to update this notification at a later date, you need to assign it an ID.
-        // You can then use this ID whenever you issue a subsequent notification.
-        // If the previous notification is still visible, the system will update this existing notification,
-        // rather than create a new one. In this example, the notification’s ID is 001//
 
         mNotificationManager.notify(001, mBuilder.build());
     }
 
     /*
+    Alternative way - discontinued
+
     private class UpdateTemperatureAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {
@@ -260,7 +232,6 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 }
                 else
                 {
-                    // TODO: Error handling?
                     return "ERROR_0";
                 }
             }

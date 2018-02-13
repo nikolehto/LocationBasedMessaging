@@ -8,12 +8,8 @@ package dot.weatherinformation3;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.CursorIndexOutOfBoundsException;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
-
 
 public class TemperatureDatabaseAdapter {
     TemperatureDbHelper myhelper;
@@ -35,9 +31,8 @@ public class TemperatureDatabaseAdapter {
 
     public String getLatestTemperatureByCity(String city) {
         SQLiteDatabase db = myhelper.getReadableDatabase();
-        //Cursor cursor =  db.rawQuery("select * from " + BanksTable.NAME + " where " + BanksTable.COL_NAME + "='" + bankName + "'" , null);
-        String[] columns = null; //{TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
-        //String[] selectionArgs = {"MAX()"TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
+
+        String[] columns = null;
         String where = TemperatureDbHelper.CITY + "=?";
         String[] args = {city};
         String orderBy = TemperatureDbHelper.UID +" DESC";
@@ -45,21 +40,18 @@ public class TemperatureDatabaseAdapter {
 
         if(cursor.moveToFirst()) {
             String temperature = cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.TEMPERATURE));
-            String index = cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.UID));
+            cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.UID));
             return temperature;
         }
         else {
-            // TODO better
+            // TODO better error handing
             return "<NO RECORD>";
         }
-
     }
 
-
-    // TODO remvoe
     public String getData()
     {
-        SQLiteDatabase db = myhelper.getReadableDatabase(); // Correction to sample we do not write TODO: check?
+        SQLiteDatabase db = myhelper.getReadableDatabase(); // Correction to example - writable -> readable
         String[] columns = {TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
         Cursor cursor =db.query(TemperatureDbHelper.TABLE_NAME,columns,null,null,null,null,null);
         StringBuffer buffer= new StringBuffer();
@@ -114,13 +106,10 @@ public class TemperatureDatabaseAdapter {
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
             try {
-                //Message.message(context,"OnUpgrade");
-                // TODO Log this
                 db.execSQL(DROP_TABLE);
                 onCreate(db);
             }catch (Exception e) {
                 e.printStackTrace();
-                //Message.message(context,""+e);
             }
         }
     }
