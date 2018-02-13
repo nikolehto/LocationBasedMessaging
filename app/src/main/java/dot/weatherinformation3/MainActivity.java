@@ -38,11 +38,19 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     String units = "metric";
     String url;
 
+    final int updateRate = 60000; // 10min + request time
+    final int errorUpdateRate = 120000; // 20min + request time
+
+    boolean errorFlag = false;
+    boolean externalRefresh = false;
+    final Handler delayHandler = new Handler();
+
     TemperatureResultReceiver mReceiver;
     NotificationChannel mChannel;
 
     NotificationManager notificationManager;
     Intent intent;
+
     //MyObserver myObserver = new MyObserver(new Handler());
 
     TextView temp_text;
@@ -76,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
             case TemperatureService.STATUS_RUNNING:
-                temp_text.setText("updating"); // TODO remove
+                // temp_text.setText("updating"); // TODO remove
                 //setProgressBarIndeterminateVisibility(true);
                 break;
             case TemperatureService.STATUS_FINISHED:
@@ -85,29 +93,45 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 String result = resultData.getString("result");
                 temp_text.setText(result);
 
+                errorFlag = false;
+
+                if(externalRefresh)
+                {
+                    externalRefresh = false;
+                    break;
+                }
+
                 // Last service was success, start new service
-                final Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
+                delayHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         startUpdateTEMP();
                     }
-                }, 10000);
+                }, 600000);
 
                 break;
             case TemperatureService.STATUS_ERROR:
                 /* Handle the error */
                 temp_text.setText("ERROR");
                 String error = resultData.getString(Intent.EXTRA_TEXT);
-                Toast.makeText(this, error, Toast.LENGTH_LONG).show();
-                final Handler handler2;
-                handler2 = new Handler();
-                handler2.postDelayed(new Runnable() {
+
+                if (errorFlag == false) {
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+                    errorFlag = true;
+                }
+
+                if(externalRefresh)
+                {
+                    externalRefresh = false;
+                    break;
+                }
+
+                delayHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         startUpdateTEMP();
                     }
-                }, 10000);
+                }, 1200000);
                 break;
         }
     }
@@ -126,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
         //new UpdateTemperatureAsyncTask().execute(url);
     }
 
+    /*
     private class UpdateTemperatureAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {
@@ -199,4 +224,5 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
             return tempValue;
         }
     }
+    */
 }
