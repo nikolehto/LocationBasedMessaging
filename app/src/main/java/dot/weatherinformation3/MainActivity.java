@@ -33,13 +33,12 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
 
     //FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getContext());
     final String APIkey = "077dcca6103cc9b1548abcee08a850a7";
-    final String APIURL = "http://api.openweathermap.org/data/2.5/weather?"; //weather?lat=35&lon=139
-    String location = "Oulu,FI";
+    String city = "Oulu,FI";
     String units = "metric";
-    String url;
+    //String url;
 
-    final int updateRate = 60000; // 10min + request time
-    final int errorUpdateRate = 120000; // 20min + request time
+    final int updateRate = 600; // 6sek 10min + request time
+    final int errorUpdateRate = 1200; // 12sek 20min + request time
 
     boolean errorFlag = false;
     boolean externalRefresh = false;
@@ -64,20 +63,16 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
 
         temp_text =(TextView) findViewById(R.id.temperature);
 
+        mReceiver = new TemperatureResultReceiver(new Handler());
+        mReceiver.setReceiver(this);
+
+        intent = new Intent(Intent.ACTION_SYNC, null, this, TemperatureService.class);
+        intent.putExtra("city", city);
+        intent.putExtra("receiver", mReceiver);
+        intent.putExtra("APIkey", APIkey);
+
         startUpdateTEMP();
         //startUpdateTEMP();
-    }
-
-    void buildURI(){
-        Uri.Builder builder = Uri.parse(APIURL).buildUpon();
-
-        String contentType = "application/json";
-
-        builder.appendQueryParameter("q", location);
-        builder.appendQueryParameter("units", units);
-        builder.appendQueryParameter("APPID", APIkey);
-
-        url = builder.toString();
     }
 
     @Override
@@ -86,6 +81,10 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
             case TemperatureService.STATUS_RUNNING:
                 // temp_text.setText("updating"); // TODO remove
                 //setProgressBarIndeterminateVisibility(true);
+                break;
+            case TemperatureService.STATUS_FROM_DB:
+                String DB_result = resultData.getString("DB_result");
+                temp_text.setText(DB_result);
                 break;
             case TemperatureService.STATUS_FINISHED:
                 /* Hide progress & extract result from bundle */
@@ -107,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                     public void run() {
                         startUpdateTEMP();
                     }
-                }, 600000);
+                }, updateRate);
 
                 break;
             case TemperatureService.STATUS_ERROR:
@@ -131,19 +130,12 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                     public void run() {
                         startUpdateTEMP();
                     }
-                }, 1200000);
+                }, errorUpdateRate);
                 break;
         }
     }
 
     void startUpdateTEMP() {
-        buildURI();
-
-        mReceiver = new TemperatureResultReceiver(new Handler());
-        mReceiver.setReceiver(this);
-        Intent intent = new Intent(Intent.ACTION_SYNC, null, this, TemperatureService.class);
-        intent.putExtra("url", url);
-        intent.putExtra("receiver", mReceiver);
 
         startService(intent);
 

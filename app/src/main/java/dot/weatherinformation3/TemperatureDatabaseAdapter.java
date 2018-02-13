@@ -39,7 +39,8 @@ public class TemperatureDatabaseAdapter {
         String where =  TemperatureDbHelper.CITY + "=?";
         String[] args = {city};
         Cursor cursor =db.query(TemperatureDbHelper.TABLE_NAME, columns, where, args,null, null, TemperatureDbHelper.UID);
-        if(cursor != null)
+
+        if(cursor != null && cursor.getPosition() != -1)
         {
             cursor.moveToLast();
             String temperature = cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.TEMPERATURE));
@@ -102,7 +103,6 @@ public class TemperatureDatabaseAdapter {
         }
 
         public void onCreate(SQLiteDatabase db) {
-
             try {
                 db.execSQL(CREATE_TABLE);
             } catch (Exception e) {

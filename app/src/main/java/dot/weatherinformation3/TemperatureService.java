@@ -1,7 +1,9 @@
 package dot.weatherinformation3;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
@@ -28,34 +30,68 @@ import java.net.URL;
 public class TemperatureService extends IntentService {
 
     public static final int STATUS_RUNNING = 0;
-    public static final int STATUS_FINISHED = 1;
-    public static final int STATUS_ERROR = 2;
+    public static final int STATUS_FROM_DB = 1;
+    public static final int STATUS_FINISHED = 2;
+    public static final int STATUS_ERROR = 3;
+
+    private TemperatureDatabaseAdapter temperatureDatabaseAdapter;
+
+    private final String APIURL = "http://api.openweathermap.org/data/2.5/weather?";
+    private String city = "";
+    private String APIkey = "";
+
+    private int DEBUGdelay = 1500; // TODO remove debug delay
 
     private static final String TAG = "TemperatureService";
 
+
     public TemperatureService() {
         super(TemperatureService.class.getName());
+        temperatureDatabaseAdapter = new TemperatureDatabaseAdapter(this);
     }
-
+/*
+    @Override
+    public void onCreate()
+    {
+        //
+    }
+*/
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         Log.d(TAG, "Service Started!");
 
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
-        String url = intent.getStringExtra("url");
+        city = intent.getStringExtra("city");
+        APIkey = intent.getStringExtra("APIkey");
+        //boolean fast = intent.getBooleanExtra("fast");
 
         Bundle bundle = new Bundle();
 
+        String url = buildURI();
         if (!TextUtils.isEmpty(url)) {
-
-            /* Update UI: Download Service is Running */
-            receiver.send(STATUS_RUNNING, Bundle.EMPTY);
+            String latestTemp = temperatureDatabaseAdapter.getLatestTemperatureByCity(city);
+            //if(latestTemp != "<NO RECORD>") {
+                bundle.putString("DB_result", "latestTemp" + latestTemp); // TODO remove latestTemp
+                receiver.send(STATUS_FROM_DB, Bundle.EMPTY);
+            //}
+            //else {
+                /* Update UI: Download Service is Running */
+                receiver.send(STATUS_RUNNING, Bundle.EMPTY);
+            //} // TODO remove comments
 
             try {
+                try {
+                    Thread.sleep(DEBUGdelay); // TODO remove
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 String result = getTemperature(url);
+
                 if (result != null) {
                     bundle.putString("result", result);
                     receiver.send(STATUS_FINISHED, bundle);
+                    temperatureDatabaseAdapter.insertData(city, result);
                 }
             } catch (IOException e) {
                 // TODO Error
@@ -107,8 +143,6 @@ public class TemperatureService extends IntentService {
             {
                 return "NO_RESPONSE";
             }
-
-
     }
 
     String parseResponse(String response) throws JSONException {
@@ -119,5 +153,22 @@ public class TemperatureService extends IntentService {
         tempValue = jObj.getJSONObject("main").getString("temp");
 
         return tempValue;
+    }
+
+    String buildURI(){
+        Uri.Builder builder = Uri.parse(APIURL).buildUpon();
+
+        String contentType = "application/json";
+
+        if(city == "" || APIkey == "")
+        {
+            return null;
+        }
+
+        builder.appendQueryParameter("q", city);
+        builder.appendQueryParameter("units", "metric");
+        builder.appendQueryParameter("APPID", APIkey);
+
+        return builder.toString();
     }
 }
