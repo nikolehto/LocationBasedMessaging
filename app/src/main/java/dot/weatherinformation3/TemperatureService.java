@@ -40,7 +40,7 @@ public class TemperatureService extends IntentService {
     private String city = "";
     private String APIkey = "";
 
-    private int DEBUGdelay = 1500; // TODO remove debug delay
+    private int DEBUGdelay = 1800; // TODO remove debug delay
 
     private static final String TAG = "TemperatureService";
 
@@ -58,30 +58,29 @@ public class TemperatureService extends IntentService {
 */
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        Log.d(TAG, "Service Started!");
+        //Log.d(TAG, "Service Started!");
 
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
         city = intent.getStringExtra("city");
         APIkey = intent.getStringExtra("APIkey");
-        //boolean fast = intent.getBooleanExtra("fast");
 
         Bundle bundle = new Bundle();
 
         String url = buildURI();
         if (!TextUtils.isEmpty(url)) {
             String latestTemp = temperatureDatabaseAdapter.getLatestTemperatureByCity(city);
-            //if(latestTemp != "<NO RECORD>") {
-                bundle.putString("DB_result", "latestTemp" + latestTemp); // TODO remove latestTemp
-                receiver.send(STATUS_FROM_DB, Bundle.EMPTY);
-            //}
-            //else {
+            if(latestTemp != "<NO RECORD>") {
+                bundle.putString("DB_result", latestTemp); // TODO remove latestTemp
+                receiver.send(STATUS_FROM_DB, bundle);
+            }
+            else {
                 /* Update UI: Download Service is Running */
                 receiver.send(STATUS_RUNNING, Bundle.EMPTY);
-            //} // TODO remove comments
+            }
 
             try {
                 try {
-                    Thread.sleep(DEBUGdelay); // TODO remove
+                    Thread.sleep(DEBUGdelay);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -91,7 +90,7 @@ public class TemperatureService extends IntentService {
                 if (result != null) {
                     bundle.putString("result", result);
                     receiver.send(STATUS_FINISHED, bundle);
-                    temperatureDatabaseAdapter.insertData(city, result);
+                    long id = temperatureDatabaseAdapter.insertData(city, result);
                 }
             } catch (IOException e) {
                 // TODO Error
@@ -107,7 +106,7 @@ public class TemperatureService extends IntentService {
             }
         }
 
-        Log.d(TAG, "Service Stopping!");
+        //Log.d(TAG, "Service Stopping!");
         this.stopSelf();
     }
 

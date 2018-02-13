@@ -8,8 +8,11 @@ package dot.weatherinformation3;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 
 public class TemperatureDatabaseAdapter {
@@ -30,28 +33,26 @@ public class TemperatureDatabaseAdapter {
         return id;
     }
 
-    public String getLatestTemperatureByCity(String city)
-    {
+    public String getLatestTemperatureByCity(String city) {
         SQLiteDatabase db = myhelper.getReadableDatabase();
         //Cursor cursor =  db.rawQuery("select * from " + BanksTable.NAME + " where " + BanksTable.COL_NAME + "='" + bankName + "'" , null);
-        String[] columns = {TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
+        String[] columns = null; //{TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
         //String[] selectionArgs = {"MAX()"TemperatureDbHelper.UID,TemperatureDbHelper.CITY,TemperatureDbHelper.TEMPERATURE};
-        String where =  TemperatureDbHelper.CITY + "=?";
-        String[] args = {city};
-        Cursor cursor =db.query(TemperatureDbHelper.TABLE_NAME, columns, where, args,null, null, TemperatureDbHelper.UID);
+        String where = null; //  TemperatureDbHelper.CITY + "=?";
+        String[] args = null; // {city};
+        String orderBy = TemperatureDbHelper.UID +" DESC";
+        Cursor cursor = db.query(TemperatureDbHelper.TABLE_NAME, columns, where, args, null, null, orderBy);
 
-        if(cursor != null && cursor.getPosition() != -1)
-        {
-            cursor.moveToLast();
+        if(cursor.moveToFirst()) {
             String temperature = cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.TEMPERATURE));
-
-            return temperature;
+            String index = cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.UID));
+            return temperature+ ", " +index; // TODO remove index
         }
-        else
-        {
+        else {
             // TODO better
             return "<NO RECORD>";
         }
+
     }
 
 

@@ -41,7 +41,9 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     final int errorUpdateRate = 1200; // 12sek 20min + request time
 
     boolean errorFlag = false;
-    boolean externalRefresh = false;
+    boolean userRefresh = false;
+    boolean isRecent = false;
+    boolean isSet = false;
     final Handler delayHandler = new Handler();
 
     TemperatureResultReceiver mReceiver;
@@ -83,20 +85,25 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 //setProgressBarIndeterminateVisibility(true);
                 break;
             case TemperatureService.STATUS_FROM_DB:
-                String DB_result = resultData.getString("DB_result");
-                temp_text.setText(DB_result);
+                if(!isRecent && isSet) { // update only when
+                    String DB_result = resultData.getString("DB_result");
+                    temp_text.setText(DB_result);
+                    isSet = true;
+                }
                 break;
             case TemperatureService.STATUS_FINISHED:
                 /* Hide progress & extract result from bundle */
                 //setProgressBarIndeterminateVisibility(false);
                 String result = resultData.getString("result");
+                isRecent = true;
+                isSet = true;
                 temp_text.setText(result);
 
                 errorFlag = false;
 
-                if(externalRefresh)
+                if(userRefresh)
                 {
-                    externalRefresh = false;
+                    userRefresh = false;
                     break;
                 }
 
@@ -119,9 +126,9 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                     errorFlag = true;
                 }
 
-                if(externalRefresh)
+                if(userRefresh)
                 {
-                    externalRefresh = false;
+                    userRefresh = false;
                     break;
                 }
 
