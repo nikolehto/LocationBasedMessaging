@@ -70,6 +70,8 @@ public class TemperatureDatabaseAdapter {
             String  temperature =cursor.getString(cursor.getColumnIndex(TemperatureDbHelper.TEMPERATURE));
             buffer.append(cid+ "   " + city + "   " + temperature +" \n");
         }
+        cursor.close();
+        db.close();
         return buffer.toString();
     }
 

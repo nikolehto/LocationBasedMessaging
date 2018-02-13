@@ -1,14 +1,19 @@
 package dot.weatherinformation3;
 
 import android.app.IntentService;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
+
+
+import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,6 +45,8 @@ public class TemperatureService extends IntentService {
     private String city = "";
     private String APIkey = "";
 
+
+
     private int DEBUGdelay = 1800; // TODO remove debug delay
 
     private static final String TAG = "TemperatureService";
@@ -49,13 +56,7 @@ public class TemperatureService extends IntentService {
         super(TemperatureService.class.getName());
         temperatureDatabaseAdapter = new TemperatureDatabaseAdapter(this);
     }
-/*
-    @Override
-    public void onCreate()
-    {
-        //
-    }
-*/
+
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         //Log.d(TAG, "Service Started!");
@@ -90,7 +91,7 @@ public class TemperatureService extends IntentService {
                 if (result != null) {
                     bundle.putString("result", result);
                     receiver.send(STATUS_FINISHED, bundle);
-                    long id = temperatureDatabaseAdapter.insertData(city, result);
+                    temperatureDatabaseAdapter.insertData(city, result);
                 }
             } catch (IOException e) {
                 // TODO Error
@@ -170,4 +171,5 @@ public class TemperatureService extends IntentService {
 
         return builder.toString();
     }
+
 }

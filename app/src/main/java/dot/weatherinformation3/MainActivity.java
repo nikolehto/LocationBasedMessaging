@@ -37,6 +37,11 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     String units = "metric";
     //String url;
 
+    public static final int FROM_DB = 1;
+    public static final int FROM_INTERNET = 2;
+
+    private String notification_channel = "just a random id";
+
     final int updateRate = 600; // 6sek 10min + request time
     final int errorUpdateRate = 1200; // 12sek 20min + request time
 
@@ -45,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     boolean isRecent = false;
     boolean isSet = false;
     final Handler delayHandler = new Handler();
+
+    private String latestTemp = "";
 
     TemperatureResultReceiver mReceiver;
     NotificationChannel mChannel;
@@ -55,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     //MyObserver myObserver = new MyObserver(new Handler());
 
     TextView temp_text;
+    TextView city_text;
+    TextView source_text;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +72,11 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
 
         //notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-        temp_text =(TextView) findViewById(R.id.temperature);
+        temp_text = findViewById(R.id.temperature);
+        city_text = findViewById(R.id.citytext);
+        source_text = findViewById(R.id.source);
+
+        updateCity();
 
         mReceiver = new TemperatureResultReceiver(new Handler());
         mReceiver.setReceiver(this);
@@ -87,21 +100,19 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
             case TemperatureService.STATUS_FROM_DB:
                 if(!isRecent && !isSet) { // update only when
                     String DB_result = resultData.getString("DB_result");
-                    temp_text.setText(DB_result);
-                    isSet = true;
+                    updateText(DB_result, FROM_DB);
+                    //temp_text.setText(DB_result);
                 }
                 break;
             case TemperatureService.STATUS_FINISHED:
                 /* Hide progress & extract result from bundle */
                 //setProgressBarIndeterminateVisibility(false);
                 String result = resultData.getString("result");
-                isRecent = true;
-                isSet = true;
-                temp_text.setText(result);
-
+                //temp_text.setText(result);
+                updateText(result, FROM_INTERNET);
                 errorFlag = false;
 
-                if(userRefresh)
+                if(userRefresh) // if user launched activity - skip one delayed call
                 {
                     userRefresh = false;
                     break;
@@ -118,12 +129,17 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 break;
             case TemperatureService.STATUS_ERROR:
                 /* Handle the error */
-                temp_text.setText("ERROR");
+                String DB_result = resultData.getString("DB_result");
+                if(DB_result != null)
+                {
+                    updateText(DB_result, FROM_DB);
+                }
+
                 String error = resultData.getString(Intent.EXTRA_TEXT);
 
                 if (errorFlag == false) {
-                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
                     errorFlag = true;
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
                 }
 
                 if(userRefresh)
@@ -143,10 +159,70 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     }
 
     void startUpdateTEMP() {
-
         startService(intent);
+    }
 
-        //new UpdateTemperatureAsyncTask().execute(url);
+    void updateText(String temperature, int source)
+    {
+        isSet = true;
+
+        // todo only if neccessary
+        if(source == FROM_DB)
+        {
+            source_text.setText("STORED");
+            sendNotification(temperature, "STORED");
+        }
+        else // if (source == FROM_INTERNET)
+        {
+            isRecent = true;
+            source_text.setText("REAL-TIME");
+            sendNotification(temperature, "REAL-TIME");
+        }
+
+        temp_text.setText(temperature);
+        latestTemp = temperature;
+    }
+
+    void updateCity()
+    {
+        city_text.setText(city);
+    }
+
+    @Override
+    protected void onStop() {
+        if(latestTemp != "")
+        {
+            sendNotification(latestTemp, "STOPPED");
+        }
+        super.onStop();
+    }
+
+    void sendNotification(String temperature, String source) {
+        //Get an instance of NotificationManager//
+
+        String message = "City: " + city + "\nTemperature: " + temperature + "\nFROM: " + source;
+
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this, notification_channel)
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .setContentTitle("Weather Information")
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                        .setContentText(message);
+
+        // Gets an instance of the NotificationManager service//
+
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+
+        // When you issue multiple notifications about the same type of event,
+        // it’s best practice for your app to try to update an existing notification
+        // with this new information, rather than immediately creating a new notification.
+        // If you want to update this notification at a later date, you need to assign it an ID.
+        // You can then use this ID whenever you issue a subsequent notification.
+        // If the previous notification is still visible, the system will update this existing notification,
+        // rather than create a new one. In this example, the notification’s ID is 001//
+
+        mNotificationManager.notify(001, mBuilder.build());
     }
 
     /*
