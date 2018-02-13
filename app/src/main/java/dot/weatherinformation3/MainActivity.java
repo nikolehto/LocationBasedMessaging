@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 //setProgressBarIndeterminateVisibility(true);
                 break;
             case TemperatureService.STATUS_FROM_DB:
-                if(!isRecent && isSet) { // update only when
+                if(!isRecent && !isSet) { // update only when
                     String DB_result = resultData.getString("DB_result");
                     temp_text.setText(DB_result);
                     isSet = true;
