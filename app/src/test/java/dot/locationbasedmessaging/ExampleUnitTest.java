@@ -1,4 +1,4 @@
-package dot.weatherinformation3;
+package dot.locationbasedmessaging;
 
 import org.junit.Test;
 

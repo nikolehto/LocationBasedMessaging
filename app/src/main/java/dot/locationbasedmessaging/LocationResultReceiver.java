@@ -1,4 +1,4 @@
-package dot.weatherinformation3;
+package dot.locationbasedmessaging;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,10 +9,10 @@ import android.os.ResultReceiver;
  * Based on http://stacktips.com/tutorials/android/creating-a-background-service-in-android
  */
 
-public class TemperatureResultReceiver extends ResultReceiver {
+public class LocationResultReceiver extends ResultReceiver {
     private Receiver mReceiver;
 
-    public TemperatureResultReceiver(Handler handler) {
+    public LocationResultReceiver(Handler handler) {
         super(handler);
     }
 

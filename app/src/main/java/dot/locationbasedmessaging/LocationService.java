@@ -1,4 +1,4 @@
-package dot.weatherinformation3;
+package dot.locationbasedmessaging;
 
 import android.app.IntentService;
 import android.content.Intent;
@@ -22,24 +22,24 @@ import java.net.URL;
  */
 
 
-public class TemperatureService extends IntentService {
+public class LocationService extends IntentService {
 
     public static final int STATUS_RUNNING = 0;
     public static final int STATUS_FROM_DB = 1;
     public static final int STATUS_FINISHED = 2;
     public static final int STATUS_ERROR = 3;
-    private static final String TAG = "TemperatureService";
+    private static final String TAG = "LocationService";
 
     private final String APIURL = "http://api.openweathermap.org/data/2.5/weather?";
     private String city = "";
     private String APIkey = "";
     private int DEBUGdelay = 1800; // TODO remove delay
 
-    private TemperatureDatabaseAdapter temperatureDatabaseAdapter;
+    private MessageDatabaseAdapter messageDatabaseAdapter;
 
-    public TemperatureService() {
-        super(TemperatureService.class.getName());
-        temperatureDatabaseAdapter = new TemperatureDatabaseAdapter(this);
+    public LocationService() {
+        super(LocationService.class.getName());
+        messageDatabaseAdapter = new MessageDatabaseAdapter(this);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class TemperatureService extends IntentService {
 
         String url = buildURI();
         if (!TextUtils.isEmpty(url)) {
-            String latestTemp = temperatureDatabaseAdapter.getLatestTemperatureByCity(city);
+            String latestTemp = messageDatabaseAdapter.getLatestTemperatureByCity(city);
             if(latestTemp != "<NO RECORD>") {
                 bundle.putString("DB_result", latestTemp);
                 receiver.send(STATUS_FROM_DB, bundle);
@@ -76,7 +76,7 @@ public class TemperatureService extends IntentService {
                 if (result != null) {
                     bundle.putString("result", result);
                     receiver.send(STATUS_FINISHED, bundle);
-                    temperatureDatabaseAdapter.insertData(city, result);
+                    messageDatabaseAdapter.insertData(city, result);
                 }
             } catch (IOException e) {
                 // TODO Error

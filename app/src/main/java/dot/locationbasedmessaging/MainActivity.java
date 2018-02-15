@@ -1,14 +1,19 @@
-package dot.weatherinformation3;
+package dot.locationbasedmessaging;
 
 
-/*********************************
-  *      DEBUG version          *
-   *  - Sleep on http request  *
-    * - Very fast update-rate *
-     *************************
- **/
-
-import android.app.NotificationChannel;
+/*
+*  TODO:
+*  - Get map
+*  - Get location ( in service )
+*  - Poll database () (in service)
+*  - Sticky location service
+*  - Pop-up Notification (from service)
+*  - Hide Notification (from service)
+*  - Write messages ( Main activity )
+*  - Store messages to database ( Main activity - async task? )
+*  - Read message ( Main activity? - async task? // return nearest message from service)
+*  ...
+* */
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
@@ -19,8 +24,7 @@ import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements TemperatureResultReceiver.Receiver {
-
+public class MainActivity extends AppCompatActivity implements LocationResultReceiver.Receiver {
     //FeedReaderDbHelper mDbHelper = new FeedReaderDbHelper(getContext());
     public static final int FROM_DB = 1;
     public static final int FROM_INTERNET = 2;
@@ -40,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
 
     final Handler delayHandler = new Handler();
 
-    TemperatureResultReceiver mReceiver;
+    LocationResultReceiver mReceiver;
     Intent intent;
 
     TextView temp_text;
@@ -60,10 +64,10 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
 
         updateCity();
 
-        mReceiver = new TemperatureResultReceiver(new Handler());
+        mReceiver = new LocationResultReceiver(new Handler());
         mReceiver.setReceiver(this);
 
-        intent = new Intent(Intent.ACTION_SYNC, null, this, TemperatureService.class);
+        intent = new Intent(Intent.ACTION_SYNC, null, this, LocationService.class);
         intent.putExtra("city", city);
         intent.putExtra("receiver", mReceiver);
         intent.putExtra("APIkey", APIkey);
@@ -75,9 +79,9 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
-            case TemperatureService.STATUS_RUNNING:
+            case LocationService.STATUS_RUNNING:
                 break;
-            case TemperatureService.STATUS_FROM_DB:
+            case LocationService.STATUS_FROM_DB:
                 if(!isRecent && !isSet) { // update only when
                     String DB_result = resultData.getString("DB_result");
                     if(DB_result != null) {
@@ -86,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                     //temp_text.setText(DB_result);
                 }
                 break;
-            case TemperatureService.STATUS_FINISHED:
+            case LocationService.STATUS_FINISHED:
                 /* Hide progress & extract result from bundle */
                 //setProgressBarIndeterminateVisibility(false);
                 String result = resultData.getString("result");
@@ -109,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements TemperatureResult
                 }, updateRate);
 
                 break;
-            case TemperatureService.STATUS_ERROR:
+            case LocationService.STATUS_ERROR:
                 /* Handle the error */
                 String DB_result = resultData.getString("DB_result");
                 if(DB_result != null)

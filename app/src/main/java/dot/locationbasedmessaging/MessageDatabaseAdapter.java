@@ -1,4 +1,4 @@
-package dot.weatherinformation3;
+package dot.locationbasedmessaging;
 
 /**
  * Created by Niko on 13.2.2018.
@@ -11,10 +11,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class TemperatureDatabaseAdapter {
+public class MessageDatabaseAdapter {
     TemperatureDbHelper myhelper;
 
-    public TemperatureDatabaseAdapter(Context context)
+    public MessageDatabaseAdapter(Context context)
     {
         myhelper = new TemperatureDbHelper(context);
     }
