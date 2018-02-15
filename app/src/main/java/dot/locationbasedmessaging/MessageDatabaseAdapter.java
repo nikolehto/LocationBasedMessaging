@@ -19,61 +19,74 @@ public class MessageDatabaseAdapter {
         myhelper = new LocationDbHelper(context);
     }
 
-    public long insertData(String city, String temperature)
+    public long insertData(String msg, double longitude, double latitude)
     {
         SQLiteDatabase dbb = myhelper.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
-        contentValues.put(LocationDbHelper.CITY, city);
-        contentValues.put(LocationDbHelper.TEMPERATURE, temperature);
+        contentValues.put(LocationDbHelper.MESSAGE, msg);
+        contentValues.put(LocationDbHelper.LON, longitude);
+        contentValues.put(LocationDbHelper.LAT, latitude);
         long id = dbb.insert(LocationDbHelper.TABLE_NAME, null , contentValues);
         return id;
     }
 
-    public String getLatestTemperatureByCity(String city) {
-        SQLiteDatabase db = myhelper.getReadableDatabase();
-
+    public String getMessageByLocation(double q_longitude, double q_latitude, double q_radius)
+    {
+        SQLiteDatabase db = myhelper.getReadableDatabase(); // Correction to example - writable -> readable
         String[] columns = null;
-        String where = LocationDbHelper.CITY + "=?";
-        String[] args = {city};
-        String orderBy = LocationDbHelper.UID +" DESC";
-        Cursor cursor = db.query(LocationDbHelper.TABLE_NAME, columns, where, args, null, null, orderBy);
 
-        if(cursor.moveToFirst()) {
-            String temperature = cursor.getString(cursor.getColumnIndex(LocationDbHelper.TEMPERATURE));
-            cursor.getString(cursor.getColumnIndex(LocationDbHelper.UID));
-            return temperature;
+        // To optimize query, but how to deal with (-180) - 180 change
+        //String where = LocationDbHelper.LON + ">?" + LocationDbHelper.LON + "<?" + LocationDbHelper.LAT + ">?" + LocationDbHelper.LAT + "<?";
+        //String args = {min_lon, max_lon, min_lat, max_lot};
+        String orderBy = LocationDbHelper.UID;
+        Cursor cursor =db.query(LocationDbHelper.TABLE_NAME,columns,null,null,null,null,orderBy);
+        String result = "<NO RESULT>";
+        while (cursor.moveToNext())
+        {
+            int cid =cursor.getInt(cursor.getColumnIndex(LocationDbHelper.UID));
+            String msg =cursor.getString(cursor.getColumnIndex(LocationDbHelper.MESSAGE));
+            double lon =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LON));
+            double lat =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LAT));
+
+            boolean isNearest = true; // TODO implement functionality
+             // before it this should return latest MSG
+            if(isNearest)
+            {
+                result = msg;
+            }
         }
-        else {
-            // TODO better error handing
-            return "<NO RECORD>";
-        }
+        cursor.close();
+        db.close();
+        return result;
     }
 
     public String getData()
     {
         SQLiteDatabase db = myhelper.getReadableDatabase(); // Correction to example - writable -> readable
-        String[] columns = {LocationDbHelper.UID, LocationDbHelper.CITY, LocationDbHelper.TEMPERATURE};
+        String[] columns = null;
         Cursor cursor =db.query(LocationDbHelper.TABLE_NAME,columns,null,null,null,null,null);
         StringBuffer buffer= new StringBuffer();
         while (cursor.moveToNext())
         {
             int cid =cursor.getInt(cursor.getColumnIndex(LocationDbHelper.UID));
-            String city =cursor.getString(cursor.getColumnIndex(LocationDbHelper.CITY));
-            String  temperature =cursor.getString(cursor.getColumnIndex(LocationDbHelper.TEMPERATURE));
-            buffer.append(cid+ "   " + city + "   " + temperature +" \n");
+            String msg =cursor.getString(cursor.getColumnIndex(LocationDbHelper.MESSAGE));
+            double lon =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LON));
+            double lat =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LAT));
+
+            buffer.append(cid+ "   " + msg + "   " + lon + "   " + lat + "\n");
         }
         cursor.close();
         db.close();
         return buffer.toString();
     }
 
-    public int delete(String city)
+    public void deleteById(String id)
     {
         SQLiteDatabase db = myhelper.getWritableDatabase();
-        String[] whereArgs ={city};
+        String[] whereArgs ={id};
 
-        int count =db.delete(LocationDbHelper.TABLE_NAME , LocationDbHelper.CITY+" = ?",whereArgs);
-        return  count;
+        db.delete(LocationDbHelper.TABLE_NAME , LocationDbHelper.UID+" = ?",whereArgs);
+        //return  count;
     }
 
     static class LocationDbHelper extends SQLiteOpenHelper
@@ -82,11 +95,11 @@ public class MessageDatabaseAdapter {
         private static final String TABLE_NAME = "myTable";   // Table Name
         private static final int DATABASE_Version = 1;    // Database Version
         private static final String UID="_id";     // Column I (Primary Key)
-        private static final String MESSAGE = "Message";    //Column II
-        private static final String LON = "Lon";    // Column III
-        private static final String LAT = "Lat";    // Column IV
+        private static final String MESSAGE = "message";    //Column II
+        private static final String LON = "lon";    // Column III
+        private static final String LAT = "lat";    // Column IV
         private static final String CREATE_TABLE = "CREATE TABLE "+TABLE_NAME+
-                " ("+UID+" INTEGER PRIMARY KEY AUTOINCREMENT, "+MESSAGE+" VARCHAR(255) ,"+ LON+" VARCHAR(255) ,"+ LAT+" VARCHAR(255));";
+                " ("+UID+" INTEGER PRIMARY KEY AUTOINCREMENT, "+MESSAGE+" VARCHAR(255) ,"+ LON+" DOUBLE ,"+ LAT+" DOUBLE);";
         private static final String DROP_TABLE ="DROP TABLE IF EXISTS "+TABLE_NAME;
         private Context context;
 
