@@ -14,11 +14,8 @@ package dot.locationbasedmessaging;
 *  - Read message ( Main activity? - async task? // return nearest message from service)
 *  ...
 * */
-import android.app.NotificationManager;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.EditText;
@@ -63,26 +60,20 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
-            case LocationService.STATUS_RUNNING:
-                break;
-            case LocationService.STATUS_FINISHED:
+            case LocationService.STATUS_MSG_FOUND:
                     String location = resultData.getString("location");
                     String message = resultData.getString("message");
                     if(message != null && location != null) {
                         updateText(location, message);
                     }
                 break;
+            case LocationService.STATUS_MSG_NOT_FOUND:
+                break;
             case LocationService.STATUS_POSTED:
                 break;
-            case LocationService.STATUS_ERROR:
-                /* Handle the error */
-                String error = resultData.getString(Intent.EXTRA_TEXT);
 
-                if (errorFlag == false) {
-                    errorFlag = true;
-                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
-                }
-        }
+            //Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+            }
     }
 
     void updateText(String location, String message)
@@ -111,80 +102,5 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
         mNotificationManager.notify(001, mBuilder.build());
     }
 */
-    /*
-    Alternative way - discontinued
 
-    private class UpdateTemperatureAsyncTask extends AsyncTask<String, Void, String> {
-        @Override
-        protected String doInBackground(String... params) {
-            try
-            {
-                InputStream is;
-                URL path = new URL(params[0]);
-                HttpURLConnection connection = (HttpURLConnection) path.openConnection();
-                int timeout = 60 * 1000;
-
-                connection.setReadTimeout(timeout); // set request timeout
-                connection.setConnectTimeout(timeout);
-                connection.setRequestMethod("GET"); //set HTTP method
-                connection.connect();
-
-                StringBuffer buffer = new StringBuffer();
-                is = connection.getInputStream();
-                BufferedReader br = new BufferedReader(new InputStreamReader(is));
-                String line = "";
-                while ( (line = br.readLine()) != null )
-                {
-                    buffer.append(line + "rn");
-                }
-
-                is.close();
-                connection.disconnect();
-                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK)
-                {
-                    String temperature = parseResponse(buffer.toString());
-
-                    return temperature;
-                }
-                else
-                {
-                    return "ERROR_0";
-                }
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-            catch (JSONException e)
-            {
-                e.printStackTrace();
-            }
-            return "ERROR_1";
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            //super.onPostExecute(result);
-
-            temp_text.setText(result);
-
-        }
-
-        @Override
-        protected void onPreExecute() {}
-
-        @Override
-        protected void onProgressUpdate(Void... values) {}
-
-        String parseResponse(String response) throws JSONException {
-            JSONObject jObj = null;
-            String tempValue = null;
-
-            jObj = new JSONObject(response);
-            tempValue = jObj.getJSONObject("main").getString("temp");
-
-            return tempValue;
-        }
-    }
-    */
 }

@@ -1,15 +1,16 @@
 package dot.locationbasedmessaging;
 
 import android.app.IntentService;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
+import android.support.v4.app.NotificationCompat;
+
 import org.json.JSONException;
-import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,19 +23,20 @@ import java.net.URL;
  * Based on http://stacktips.com/tutorials/android/creating-a-background-service-in-android
  */
 
-
 public class LocationService extends IntentService {
 
-    public static final int STATUS_RUNNING = 0;
     public static final int STATUS_POSTED = 1;
-    public static final int STATUS_FINISHED = 2;
-    public static final int STATUS_ERROR = 3;
+    public static final int STATUS_MSG_FOUND = 2;
+    public static final int STATUS_MSG_NOT_FOUND = 3;
 
     public static final int TASK_POLL_LOCATION = 0;
     public static final int TASK_INSERT_TO_DB = 1;
 
     private static final String TAG = "LocationService";
 
+    double radius = 100; // meters
+    double longitude = 0.0f;
+    double latitude = 0.0f;
     private MessageDatabaseAdapter messageDatabaseAdapter;
 
     public LocationService() {
@@ -49,52 +51,28 @@ public class LocationService extends IntentService {
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
         int taskType = intent.getIntExtra("task", TASK_POLL_LOCATION);
         updateLocation();
-
         Bundle bundle = new Bundle();
 
         switch(taskType)
         {
             case TASK_POLL_LOCATION:
-                getNearestMsg();
+                String msg = messageDatabaseAdapter.getMessageByLocation(longitude, latitude, radius);
+                if(msg != "<NO RECORD>") {
+                    bundle.putString("message", msg);
+                    receiver.send(STATUS_MSG_FOUND, bundle);
+                    //sendNotification(); TODO
+                }
+                else
+                {
+                    receiver.send(STATUS_MSG_NOT_FOUND, Bundle.EMPTY);
+                }
                 break;
+
             case TASK_INSERT_TO_DB:
                 String note = intent.getStringExtra("note");
-                messageDatabaseAdapter.insertData(); // TODO insert LOCATION
+                messageDatabaseAdapter.insertData(note, longitude, latitude); // TODO insert LOCATION
+                receiver.send(STATUS_POSTED, Bundle.EMPTY);
                 break;
-        }
-
-
-        String latestTemp = messageDatabaseAdapter.getLatestTemperatureByCity(city);
-        if(latestTemp != "<NO RECORD>") {
-            bundle.putString("DB_result", latestTemp);
-            receiver.send(STATUS_FROM_DB, bundle);
-        }
-        else {
-            /* Update UI: Download Service is Running */
-            receiver.send(STATUS_RUNNING, Bundle.EMPTY);
-        }
-
-        try {
-            try {
-                Thread.sleep(DEBUGdelay);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            String result = getTemperature(url);
-
-            if (result != null) {
-                bundle.putString("result", result);
-                receiver.send(STATUS_FINISHED, bundle);
-                messageDatabaseAdapter.insertData(city, result);
-            }
-        } catch (IOException e) {
-            // TODO Error
-            bundle.putString(Intent.EXTRA_TEXT, e.toString());
-            receiver.send(STATUS_ERROR, bundle);
-                    /* Sending error message back to activity */
-            //bundle.putString(Intent.EXTRA_TEXT, e.toString());
-            //receiver.send(STATUS_ERROR, bundle);
         }
 
 
@@ -102,46 +80,28 @@ public class LocationService extends IntentService {
         this.stopSelf();
     }
 
+    void sendNotification(String temperature, String source) {
+        String message = "City:  Temperature: " + temperature + "\nFROM: " + source;
 
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this, "locationServiceID404")
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .setContentTitle("Weather Information")
+                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                        .setContentText(message);
+
+
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(001, mBuilder.build());
+    }
+
+
+/* TODO remove
     String getNearestMsg()
     {
         return "";
     }
-
-    private String getTemperature(String url) throws IOException, JSONException {
-
-            URL path = new URL(url);
-
-            HttpURLConnection connection = (HttpURLConnection) path.openConnection();
-            int timeout = 60 * 1000;
-
-            connection.setReadTimeout(timeout); // set request timeout
-            connection.setConnectTimeout(timeout);
-            connection.setRequestMethod("GET"); //set HTTP method
-            connection.connect();
-
-            StringBuffer buffer = new StringBuffer();
-            InputStream is = connection.getInputStream();
-            BufferedReader br = new BufferedReader(new InputStreamReader(is));
-            String line = "";
-            while ( (line = br.readLine()) != null )
-            {
-                buffer.append(line + "rn");
-            }
-
-            is.close();
-            connection.disconnect();
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK)
-            {
-                String temperature = parseResponse(buffer.toString());
-                return temperature;
-            }
-            else
-            {
-                return "NO_RESPONSE";
-            }
-    }
-
+*/
     String formatResponse()
     {
         // TODO
