@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import org.json.JSONException;
 
@@ -46,7 +47,7 @@ public class LocationService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        //Log.d(TAG, "Service Started!");
+        Log.d(TAG, "Service Started!");
 
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
         int taskType = intent.getIntExtra("task", TASK_POLL_LOCATION);
@@ -56,14 +57,19 @@ public class LocationService extends IntentService {
         switch(taskType)
         {
             case TASK_POLL_LOCATION:
+                Log.d(TAG, "TASK POLL LOCATION "); // TODO DEBUG
                 String msg = messageDatabaseAdapter.getMessageByLocation(longitude, latitude, radius);
-                if(msg != "<NO RECORD>") {
+                if(msg != "<NO RESULT>")
+                {
+                    Log.d(TAG, "MESSAGE FOUND " + msg); // TODO DEBUG
+                    bundle.putString("location", "TODO_LOCATION");
                     bundle.putString("message", msg);
                     receiver.send(STATUS_MSG_FOUND, bundle);
                     //sendNotification(); TODO
                 }
                 else
                 {
+                    Log.d(TAG, "MESSAGE NOT FOUND, returns null "); // TODO DEBUG
                     receiver.send(STATUS_MSG_NOT_FOUND, Bundle.EMPTY);
                 }
                 break;
@@ -73,10 +79,12 @@ public class LocationService extends IntentService {
                 messageDatabaseAdapter.insertData(note, longitude, latitude); // TODO insert LOCATION
                 receiver.send(STATUS_POSTED, Bundle.EMPTY);
                 break;
+            default:
+                Log.d(TAG, "UNKNOWN TASK "); // TODO DEBUG
         }
 
 
-        //Log.d(TAG, "Service Stopping!");
+        Log.d(TAG, "Service Stopping!");
         this.stopSelf();
     }
 

@@ -18,6 +18,8 @@ import android.content.Intent;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -66,10 +68,16 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
                     if(message != null && location != null) {
                         updateText(location, message);
                     }
+                    else
+                    {
+                        updateText("Found", "ERROR TODO : REMOVE"); // TODO REMOVE
+                    }
                 break;
             case LocationService.STATUS_MSG_NOT_FOUND:
+                    updateText("NO MESSAGE", "TODO : REMOVE"); // TODO REMOVE
                 break;
             case LocationService.STATUS_POSTED:
+                Toast.makeText(this, "NOTE POSTED", Toast.LENGTH_LONG).show();
                 break;
 
             //Toast.makeText(this, error, Toast.LENGTH_LONG).show();
@@ -78,29 +86,27 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
 
     void updateText(String location, String message)
     {
-        if(!isSet)
-        {
-            locationText.setText(location);
-            showMessageText.setText(message);
-        }
-        isSet = true;
+        // TODO if differs only then set
+        locationText.setText(location);
+        showMessageText.setText(message);
+
     }
-/*
-    void sendNotification(String temperature, String source) {
-        String message = "City: " + city + "\nTemperature: " + temperature + "\nFROM: " + source;
 
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this, notification_channel)
-                        .setSmallIcon(R.drawable.notification_icon)
-                        .setContentTitle("Weather Information")
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
-                        .setContentText(message);
-
-
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        mNotificationManager.notify(001, mBuilder.build());
+    public void onPostClick(View v)
+    {
+        String note = noteText.getText().toString();
+        intent.putExtra("task", LocationService.TASK_INSERT_TO_DB);
+        intent.putExtra("note", note);
+        startService(intent);
     }
-*/
+
+    public void debugButton(View v)
+    {
+        //updateText("DEBUG", "PRESSED");
+        intent.removeExtra("note");
+        intent.putExtra("task", LocationService.TASK_POLL_LOCATION);
+
+        startService(intent);
+    }
 
 }

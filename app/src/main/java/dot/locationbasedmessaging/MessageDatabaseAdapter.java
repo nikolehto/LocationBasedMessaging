@@ -10,6 +10,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class MessageDatabaseAdapter {
     LocationDbHelper myhelper;
@@ -32,14 +33,13 @@ public class MessageDatabaseAdapter {
 
     public String getMessageByLocation(double q_longitude, double q_latitude, double q_radius)
     {
-        SQLiteDatabase db = myhelper.getReadableDatabase(); // Correction to example - writable -> readable
-        String[] columns = null;
+        SQLiteDatabase db = myhelper.getReadableDatabase();
 
         // To optimize query, but how to deal with (-180) - 180 change
         //String where = LocationDbHelper.LON + ">?" + LocationDbHelper.LON + "<?" + LocationDbHelper.LAT + ">?" + LocationDbHelper.LAT + "<?";
         //String args = {min_lon, max_lon, min_lat, max_lot};
         String orderBy = LocationDbHelper.UID;
-        Cursor cursor =db.query(LocationDbHelper.TABLE_NAME,columns,null,null,null,null,orderBy);
+        Cursor cursor =db.query(LocationDbHelper.TABLE_NAME, null,null,null,null,null,orderBy);
         String result = "<NO RESULT>";
         while (cursor.moveToNext())
         {
@@ -52,6 +52,7 @@ public class MessageDatabaseAdapter {
              // before it this should return latest MSG
             if(isNearest)
             {
+                Log.d("DATABASE: ", msg); // TODO DEBUG
                 result = msg;
             }
         }

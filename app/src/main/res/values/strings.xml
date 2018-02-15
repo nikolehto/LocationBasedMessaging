@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WeatherInformation3</string>
+    <string name="app_name">LocationbasedMessaging</string>
     <string name="channel_name">TemperatureChannel</string>
     <string name="channel_description">Shows temperature</string>
     <string name="note">Note...</string>
