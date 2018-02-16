@@ -1,14 +1,24 @@
 package dot.locationbasedmessaging;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import org.json.JSONException;
 
@@ -18,6 +28,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
+import java.util.concurrent.Executor;
 
 /**
  * Created by Niko on 12.2.2018.
@@ -39,10 +51,12 @@ public class LocationService extends IntentService {
     double longitude = 0.0f;
     double latitude = 0.0f;
     private MessageDatabaseAdapter messageDatabaseAdapter;
+    private FusedLocationProviderClient mFusedLocationClient;
 
     public LocationService() {
         super(LocationService.class.getName());
         messageDatabaseAdapter = new MessageDatabaseAdapter(this);
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
     @Override
@@ -54,24 +68,24 @@ public class LocationService extends IntentService {
         updateLocation();
         Bundle bundle = new Bundle();
 
-        switch(taskType)
-        {
+        //Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+
+        switch (taskType) {
             case TASK_POLL_LOCATION:
                 Log.d(TAG, "TASK POLL LOCATION "); // TODO DEBUG
                 String msg = messageDatabaseAdapter.getMessageByLocation(longitude, latitude, radius);
-                if(msg != "<NO RESULT>")
-                {
+                if (msg != "<NO RESULT>") {
                     Log.d(TAG, "MESSAGE FOUND " + msg); // TODO DEBUG
-                    bundle.putString("location", "TODO_LOCATION");
+                    bundle.putString("location", longitude + "" + latitude);
                     bundle.putString("message", msg);
                     receiver.send(STATUS_MSG_FOUND, bundle);
                     String notificationText = formatResponse(longitude, latitude, msg);
                     sendNotification(notificationText); // TODO
-                }
-                else
-                {
+                } else {
                     Log.d(TAG, "MESSAGE NOT FOUND, returns null "); // TODO DEBUG
                     receiver.send(STATUS_MSG_NOT_FOUND, Bundle.EMPTY);
+                    clearNotification();
                 }
                 break;
 
@@ -103,26 +117,48 @@ public class LocationService extends IntentService {
         mNotificationManager.notify(001, mBuilder.build());
     }
 
+    void clearNotification() {
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-/* TODO remove
-    String getNearestMsg()
-    {
-        return "";
+        mNotificationManager.cancel(001);
     }
-*/
-    String formatResponse(double longitude, double latitude, String msg)
-    {
+
+    /* TODO remove
+        String getNearestMsg()
+        {
+            return "";
+        }
+    */
+    String formatResponse(double longitude, double latitude, String msg) {
         // TODO
         String response = msg + "\nLocation " + String.format("%.4f", longitude) + "\u00b0N, " + String.format("%.4f", latitude) + "\u00b0E";
         return response;
     }
 
-    boolean updateLocation()
-    {
+    public static boolean checkPermission(final Context context) {
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @SuppressLint("MissingPermission")
+    boolean updateLocation() {
         //Location da = new Location();
         //da.getLatitude();
         //da.getLongitude()
 
+        //bool permission = checkPermission();
+
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener((Executor) this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        // Got last known location. In some rare situations this can be null.
+                        if (location != null) {
+                            longitude = location.getLongitude();
+                            latitude = location.getLatitude();
+                        }
+                    }
+                });
         // TODO
         return true;
     }

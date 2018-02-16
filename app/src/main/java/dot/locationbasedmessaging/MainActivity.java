@@ -14,8 +14,10 @@ package dot.locationbasedmessaging;
 *  - Read message ( Main activity? - async task? // return nearest message from service)
 *  ...
 * */
+import android.Manifest;
 import android.content.Intent;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,11 +40,13 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
     TextView locationText;
     TextView showMessageText;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        setContentView(R.layout.activity_main);
+        showPermissionDialog();
         //notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         noteText = findViewById(R.id.editText);
@@ -57,6 +61,16 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
 
         //intent.putExtra("city", city);
         intent.putExtra("receiver", mReceiver);
+    }
+
+    private void showPermissionDialog() {
+        if (!LocationService.checkPermission(this)) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
+                    99
+                    );
+        }
     }
 
     @Override
