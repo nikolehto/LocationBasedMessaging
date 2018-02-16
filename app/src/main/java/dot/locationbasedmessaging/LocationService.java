@@ -65,7 +65,8 @@ public class LocationService extends IntentService {
                     bundle.putString("location", "TODO_LOCATION");
                     bundle.putString("message", msg);
                     receiver.send(STATUS_MSG_FOUND, bundle);
-                    //sendNotification(); TODO
+                    String notificationText = formatResponse(longitude, latitude, msg);
+                    sendNotification(notificationText); // TODO
                 }
                 else
                 {
@@ -88,13 +89,12 @@ public class LocationService extends IntentService {
         this.stopSelf();
     }
 
-    void sendNotification(String temperature, String source) {
-        String message = "City:  Temperature: " + temperature + "\nFROM: " + source;
+    void sendNotification(String message) {
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this, "locationServiceID404")
                         .setSmallIcon(R.drawable.notification_icon)
-                        .setContentTitle("Weather Information")
+                        .setContentTitle("NOTE FOUND")
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                         .setContentText(message);
 
@@ -110,11 +110,11 @@ public class LocationService extends IntentService {
         return "";
     }
 */
-    String formatResponse()
+    String formatResponse(double longitude, double latitude, String msg)
     {
         // TODO
-        String msg = "TODO FORMAT RESPONSE";
-        return msg;
+        String response = msg + "\nLocation " + String.format("%.4f", longitude) + "\u00b0N, " + String.format("%.4f", latitude) + "\u00b0E";
+        return response;
     }
 
     boolean updateLocation()
