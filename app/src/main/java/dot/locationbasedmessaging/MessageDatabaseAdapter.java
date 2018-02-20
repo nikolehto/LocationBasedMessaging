@@ -10,10 +10,21 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.location.Location;
 import android.util.Log;
 
 public class MessageDatabaseAdapter {
     LocationDbHelper myhelper;
+
+    public class MessageContainer {
+        public String message;
+        public String distance;
+
+        MessageContainer(String message, float distance) {
+            this.message = message;
+            this.distance =  String.format("%.1f", distance);
+        }
+    }
 
     public MessageDatabaseAdapter(Context context)
     {
@@ -31,7 +42,7 @@ public class MessageDatabaseAdapter {
         return id;
     }
 
-    public String getMessageByLocation(double q_longitude, double q_latitude, double q_radius)
+    public MessageContainer getMessageByLocation(double q_longitude, double q_latitude, float q_radius)
     {
         SQLiteDatabase db = myhelper.getReadableDatabase();
 
@@ -41,24 +52,33 @@ public class MessageDatabaseAdapter {
         String orderBy = LocationDbHelper.UID;
         Cursor cursor =db.query(LocationDbHelper.TABLE_NAME, null,null,null,null,null,orderBy);
         String result = "<NO RESULT>";
+
+        Location loc1 = new Location("");
+        loc1.setLongitude(q_longitude);
+        loc1.setLatitude(q_latitude);
+
+        float distance = q_radius;
         while (cursor.moveToNext())
         {
             int cid =cursor.getInt(cursor.getColumnIndex(LocationDbHelper.UID));
             String msg =cursor.getString(cursor.getColumnIndex(LocationDbHelper.MESSAGE));
             double lon =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LON));
             double lat =cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.LAT));
+            Location loc2 = new Location("");
+            loc2.setLongitude(lon);
+            loc2.setLatitude(lat);
+            float distanceInMeters = loc1.distanceTo(loc2);
 
-            boolean isNearest = true; // TODO implement functionality
-             // before it this should return latest MSG
-            if(isNearest)
+            if(distanceInMeters <= distance) // closest and newest message
             {
-                Log.d("DATABASE: ", msg); // TODO DEBUG
+                distance = distanceInMeters;
                 result = msg;
             }
         }
         cursor.close();
         db.close();
-        return result;
+        MessageContainer msgcont = new MessageContainer(result, distance);
+        return msgcont;
     }
 
     public String getData()

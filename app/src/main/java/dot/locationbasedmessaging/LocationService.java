@@ -2,6 +2,7 @@ package dot.locationbasedmessaging;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
@@ -47,44 +49,59 @@ public class LocationService extends IntentService {
 
     private static final String TAG = "LocationService";
 
-    double radius = 100; // meters
-    double longitude = 0.0f;
-    double latitude = 0.0f;
+    double longitude;
+    double latitude;
+
+    boolean locationUpdated;
+
+    float radius = 100; // meters
+
     private MessageDatabaseAdapter messageDatabaseAdapter;
     private FusedLocationProviderClient mFusedLocationClient;
 
     public LocationService() {
         super(LocationService.class.getName());
         messageDatabaseAdapter = new MessageDatabaseAdapter(this);
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        //
     }
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         Log.d(TAG, "Service Started!");
+
+        //SystemClock.sleep(1000);
 
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
         int taskType = intent.getIntExtra("task", TASK_POLL_LOCATION);
-        updateLocation();
         Bundle bundle = new Bundle();
 
+        updateLocation();
+        while(!locationUpdated) {
+            SystemClock.sleep(40);
+        }
+
+        bundle.putString("location", formatLocation(longitude,latitude));
         //Geocoder geocoder = new Geocoder(this, Locale.getDefault());
 
 
         switch (taskType) {
             case TASK_POLL_LOCATION:
                 Log.d(TAG, "TASK POLL LOCATION "); // TODO DEBUG
-                String msg = messageDatabaseAdapter.getMessageByLocation(longitude, latitude, radius);
+                MessageDatabaseAdapter.MessageContainer resultcontainer = messageDatabaseAdapter.getMessageByLocation(longitude, latitude, radius);
+                String msg = resultcontainer.message;
+                String distance = resultcontainer.distance;
                 if (msg != "<NO RESULT>") {
-                    Log.d(TAG, "MESSAGE FOUND " + msg); // TODO DEBUG
-                    bundle.putString("location", longitude + "" + latitude);
-                    bundle.putString("message", msg);
-                    receiver.send(STATUS_MSG_FOUND, bundle);
+                    String msgString = formatMessage(msg, distance);
+                    Log.d(TAG, "MESSAGE FOUND " + msgString); // TODO DEBUG
+                    bundle.putString("message", msgString);
                     String notificationText = formatResponse(longitude, latitude, msg);
                     sendNotification(notificationText); // TODO
+                    receiver.send(STATUS_MSG_FOUND, bundle);
+
                 } else {
                     Log.d(TAG, "MESSAGE NOT FOUND, returns null "); // TODO DEBUG
-                    receiver.send(STATUS_MSG_NOT_FOUND, Bundle.EMPTY);
+                    receiver.send(STATUS_MSG_NOT_FOUND, bundle);
                     clearNotification();
                 }
                 break;
@@ -92,7 +109,7 @@ public class LocationService extends IntentService {
             case TASK_INSERT_TO_DB:
                 String note = intent.getStringExtra("note");
                 messageDatabaseAdapter.insertData(note, longitude, latitude); // TODO insert LOCATION
-                receiver.send(STATUS_POSTED, Bundle.EMPTY);
+                receiver.send(STATUS_POSTED, bundle);
                 break;
             default:
                 Log.d(TAG, "UNKNOWN TASK "); // TODO DEBUG
@@ -123,43 +140,47 @@ public class LocationService extends IntentService {
         mNotificationManager.cancel(001);
     }
 
-    /* TODO remove
-        String getNearestMsg()
-        {
-            return "";
-        }
-    */
+    String formatMessage(String msg, String distance) {
+        String response = "Message: " + msg + "\n" + "Distance: " + distance;
+        return response;
+    }
+
+    String formatLocation(double longitude, double latitude) {
+
+        String response = "Location: " + String.format("%.4f", longitude) + "\u00b0N, " + String.format("%.4f", latitude) + "\u00b0E";
+        return response;
+    }
+
     String formatResponse(double longitude, double latitude, String msg) {
         // TODO
         String response = msg + "\nLocation " + String.format("%.4f", longitude) + "\u00b0N, " + String.format("%.4f", latitude) + "\u00b0E";
         return response;
     }
-
+/*
     public static boolean checkPermission(final Context context) {
         return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
-
+*/
     @SuppressLint("MissingPermission")
-    boolean updateLocation() {
-        //Location da = new Location();
-        //da.getLatitude();
-        //da.getLongitude()
-
-        //bool permission = checkPermission();
+    void updateLocation() {
+        locationUpdated = false;
 
         mFusedLocationClient.getLastLocation()
-                .addOnSuccessListener((Executor) this, new OnSuccessListener<Location>() {
+                .addOnSuccessListener( new OnSuccessListener<Location>() {
                     @Override
                     public void onSuccess(Location location) {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
+
                             longitude = location.getLongitude();
                             latitude = location.getLatitude();
+                            locationUpdated = true;
+                            Log.d(TAG, formatResponse(longitude, latitude, "debug"));
                         }
+
                     }
                 });
         // TODO
-        return true;
     }
 }

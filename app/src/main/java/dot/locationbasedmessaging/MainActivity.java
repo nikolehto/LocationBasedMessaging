@@ -28,10 +28,12 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements LocationResultReceiver.Receiver {
 
-    int poll_time = 3000;
+    int poll_time = 6000;
     boolean errorFlag = false;
 
     boolean isSet = false;
+    int userRefresh = 0;
+    final Handler delayHandler = new Handler();
 
     LocationResultReceiver mReceiver;
     Intent intent;
@@ -46,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        showPermissionDialog();
+        //showPermissionDialog();
         //notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         noteText = findViewById(R.id.editText);
@@ -58,11 +60,10 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
 
         // TODO Sticky
         intent = new Intent(Intent.ACTION_SYNC, null, this, LocationService.class);
-
-        //intent.putExtra("city", city);
         intent.putExtra("receiver", mReceiver);
+        pollTask(false);
     }
-
+    /*
     private void showPermissionDialog() {
         if (!LocationService.checkPermission(this)) {
             ActivityCompat.requestPermissions(
@@ -72,23 +73,32 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
                     );
         }
     }
+    */
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
+
+        // always update Location
+        String location = resultData.getString("location");
+        if(location != null)
+        {
+            updateLocationText(location);
+        }
+
         switch (resultCode) {
             case LocationService.STATUS_MSG_FOUND:
-                    String location = resultData.getString("location");
+
                     String message = resultData.getString("message");
-                    if(message != null && location != null) {
-                        updateText(location, message);
+                    if(message != null) {
+                        updateMessageText(message);
                     }
                     else
                     {
-                        updateText("Found", "ERROR TODO : REMOVE"); // TODO REMOVE
+                        updateMessageText("DEBUG: NEVER HAPPEN"); // TODO REMOVE
                     }
                 break;
             case LocationService.STATUS_MSG_NOT_FOUND:
-                    updateText("NO MESSAGE", "TODO : REMOVE"); // TODO REMOVE
+                    updateMessageText("DEBUG, No message stored on location"); // TODO REMOVE
                 break;
             case LocationService.STATUS_POSTED:
                 Toast.makeText(this, "NOTE POSTED", Toast.LENGTH_LONG).show();
@@ -96,31 +106,68 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
 
             //Toast.makeText(this, error, Toast.LENGTH_LONG).show();
             }
+
+            // if not started by user start new service
+        if(userRefresh == 0) {
+            // Last service was success, start new service
+            delayHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    pollTask(false);
+                }
+            }, poll_time);
+        }
+        else {
+            userRefresh--;
+        }
     }
 
-    void updateText(String location, String message)
+    void updateMessageText(String message)
     {
-        // TODO if differs only then set
-        locationText.setText(location);
+        // TODO if differs - only then set
         showMessageText.setText(message);
 
     }
 
+    void updateLocationText(String location)
+    {
+        // TODO if differs - only then set
+        locationText.setText(location);
+    }
+
     public void onPostClick(View v)
     {
+        insertTask(true);
+    }
+
+    private void insertTask(boolean fromUser)
+    {
+        if(fromUser)
+        {
+            userRefresh++;
+        }
+
         String note = noteText.getText().toString();
         intent.putExtra("task", LocationService.TASK_INSERT_TO_DB);
         intent.putExtra("note", note);
         startService(intent);
     }
 
+    private void pollTask(boolean fromUser)
+    {
+        if(fromUser)
+        {
+            userRefresh++;
+        }
+        intent.removeExtra("note");
+        intent.putExtra("task", LocationService.TASK_POLL_LOCATION);
+        startService(intent);
+    }
+
     public void debugButton(View v)
     {
         //updateText("DEBUG", "PRESSED");
-        intent.removeExtra("note");
-        intent.putExtra("task", LocationService.TASK_POLL_LOCATION);
-
-        startService(intent);
+        pollTask(true);
     }
 
 }
