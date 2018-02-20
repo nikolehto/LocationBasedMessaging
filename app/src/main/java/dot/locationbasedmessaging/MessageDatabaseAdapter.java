@@ -69,7 +69,7 @@ public class MessageDatabaseAdapter {
             loc2.setLatitude(lat);
             float distanceInMeters = loc1.distanceTo(loc2);
 
-            if(distanceInMeters <= distance) // closest and newest message
+            if(distanceInMeters <= distance) // primary: closest, secondary: newest message
             {
                 distance = distanceInMeters;
                 result = msg;

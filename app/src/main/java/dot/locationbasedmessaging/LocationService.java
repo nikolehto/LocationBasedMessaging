@@ -52,8 +52,6 @@ public class LocationService extends IntentService {
     double longitude;
     double latitude;
 
-    boolean locationUpdated;
-
     float radius = 100; // meters
 
     private MessageDatabaseAdapter messageDatabaseAdapter;
@@ -70,19 +68,15 @@ public class LocationService extends IntentService {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         Log.d(TAG, "Service Started!");
 
-        //SystemClock.sleep(1000);
-
         final ResultReceiver receiver = intent.getParcelableExtra("receiver");
+        longitude = intent.getDoubleExtra("longitude", 0.0f);
+        latitude = intent.getDoubleExtra("latitude", 0.0f);
+
         int taskType = intent.getIntExtra("task", TASK_POLL_LOCATION);
         Bundle bundle = new Bundle();
 
-        updateLocation();
-        while(!locationUpdated) {
-            SystemClock.sleep(40);
-        }
 
         bundle.putString("location", formatLocation(longitude,latitude));
-        //Geocoder geocoder = new Geocoder(this, Locale.getDefault());
 
 
         switch (taskType) {
@@ -156,31 +150,5 @@ public class LocationService extends IntentService {
         String response = msg + "\nLocation " + String.format("%.4f", longitude) + "\u00b0N, " + String.format("%.4f", latitude) + "\u00b0E";
         return response;
     }
-/*
-    public static boolean checkPermission(final Context context) {
-        return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-    }
-*/
-    @SuppressLint("MissingPermission")
-    void updateLocation() {
-        locationUpdated = false;
 
-        mFusedLocationClient.getLastLocation()
-                .addOnSuccessListener( new OnSuccessListener<Location>() {
-                    @Override
-                    public void onSuccess(Location location) {
-                        // Got last known location. In some rare situations this can be null.
-                        if (location != null) {
-
-                            longitude = location.getLongitude();
-                            latitude = location.getLatitude();
-                            locationUpdated = true;
-                            Log.d(TAG, formatResponse(longitude, latitude, "debug"));
-                        }
-
-                    }
-                });
-        // TODO
-    }
 }

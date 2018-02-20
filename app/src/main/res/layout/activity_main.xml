@@ -33,7 +33,7 @@
         app:layout_constraintHorizontal_bias="0.895"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText"
-        app:layout_constraintVertical_bias="0.931" />
+        app:layout_constraintVertical_bias="0.51" />
 
     <TextView
         android:id="@+id/location_textview"
@@ -43,7 +43,6 @@
         android:layout_marginEnd="289dp"
         android:layout_marginStart="37dp"
         android:layout_marginTop="32dp"
-        android:text="TextView"
         app:layout_constraintBottom_toTopOf="@+id/editText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -59,7 +58,6 @@
         android:layout_marginEnd="289dp"
         android:layout_marginStart="37dp"
         android:layout_marginTop="16dp"
-        android:text="TextView"
         app:layout_constraintBottom_toTopOf="@+id/editText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -72,11 +70,11 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="140dp"
         android:layout_marginStart="37dp"
-        android:layout_marginTop="43dp"
         android:onClick="debugButton"
-        android:text="DEBUG"
+        android:text="REFRESH"
+        app:layout_constraintBottom_toBottomOf="@+id/postButton"
         app:layout_constraintEnd_toStartOf="@+id/postButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText" />
+        app:layout_constraintTop_toTopOf="@+id/postButton" />
 
 </android.support.constraint.ConstraintLayout>

@@ -3,7 +3,6 @@ package dot.locationbasedmessaging;
 
 /*
 *  TODO:
-*  - Get map
 *  - Get location ( in service )
 *  - Poll database () (in service)
 *  - Sticky location service
@@ -15,7 +14,12 @@ package dot.locationbasedmessaging;
 *  ...
 * */
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -28,28 +32,50 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements LocationResultReceiver.Receiver {
 
-    int poll_time = 6000;
-    boolean errorFlag = false;
-
-    boolean isSet = false;
-    int userRefresh = 0;
-    final Handler delayHandler = new Handler();
-
     LocationResultReceiver mReceiver;
     Intent intent;
 
     EditText noteText;
     TextView locationText;
     TextView showMessageText;
+    LocationManager locationManager;
 
+    double latitude = 0.0;
+    double longitude = 0.0;
+
+    private final LocationListener listener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            if(location != null) {
+                latitude = location.getLatitude();
+                longitude = location.getLongitude();
+
+                pollTask();
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         setContentView(R.layout.activity_main);
-        //showPermissionDialog();
-        //notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        showPermissionDialog();
 
         noteText = findViewById(R.id.editText);
         locationText = findViewById(R.id.location_textview);
@@ -61,19 +87,39 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
         // TODO Sticky
         intent = new Intent(Intent.ACTION_SYNC, null, this, LocationService.class);
         intent.putExtra("receiver", mReceiver);
-        pollTask(false);
+        startListener();
     }
-    /*
-    private void showPermissionDialog() {
-        if (!LocationService.checkPermission(this)) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
-                    99
-                    );
+
+    @SuppressLint("MissingPermission")
+    protected void startListener() {
+        // first update current location
+        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if(location != null)
+        {
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+
+            pollTask();
         }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                2000,
+                0.0f,
+                listener
+        );
     }
-    */
+
+    private void showPermissionDialog() {
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {}
+        else
+            ActivityCompat.requestPermissions(
+                this,
+                new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
+                99
+                );
+    }
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
@@ -103,23 +149,8 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
             case LocationService.STATUS_POSTED:
                 Toast.makeText(this, "NOTE POSTED", Toast.LENGTH_LONG).show();
                 break;
-
-            //Toast.makeText(this, error, Toast.LENGTH_LONG).show();
             }
 
-            // if not started by user start new service
-        if(userRefresh == 0) {
-            // Last service was success, start new service
-            delayHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    pollTask(false);
-                }
-            }, poll_time);
-        }
-        else {
-            userRefresh--;
-        }
     }
 
     void updateMessageText(String message)
@@ -137,37 +168,37 @@ public class MainActivity extends AppCompatActivity implements LocationResultRec
 
     public void onPostClick(View v)
     {
-        insertTask(true);
+        if(longitude != 0.0f && latitude != 0.0f) {
+            insertTask();
+        }
+        else {
+            Toast.makeText(this, "No GPS yet", Toast.LENGTH_LONG).show();
+        }
     }
 
-    private void insertTask(boolean fromUser)
+    protected void insertTask()
     {
-        if(fromUser)
-        {
-            userRefresh++;
-        }
-
         String note = noteText.getText().toString();
         intent.putExtra("task", LocationService.TASK_INSERT_TO_DB);
         intent.putExtra("note", note);
+        intent.putExtra("longitude", longitude);
+        intent.putExtra("latitude", latitude);
         startService(intent);
     }
 
-    private void pollTask(boolean fromUser)
+    protected void pollTask()
     {
-        if(fromUser)
-        {
-            userRefresh++;
-        }
         intent.removeExtra("note");
         intent.putExtra("task", LocationService.TASK_POLL_LOCATION);
+        intent.putExtra("longitude", longitude);
+        intent.putExtra("latitude", latitude);
         startService(intent);
     }
 
     public void debugButton(View v)
     {
         //updateText("DEBUG", "PRESSED");
-        pollTask(true);
+        pollTask();
     }
 
 }
